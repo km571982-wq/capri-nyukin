@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入金報告｜株式会社カプリ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; }
+.app { max-width: 480px; margin: 0 auto; padding: 16px; }
+.app-header { text-align: center; margin-bottom: 20px; padding-top: 12px; }
+.app-header h1 { font-size: 18px; font-weight: 600; color: #111; }
+.app-header p { font-size: 12px; color: #888; margin-top: 3px; }
+.section { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.section-title { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+label { display: block; font-size: 14px; color: #555; margin-bottom: 4px; margin-top: 12px; }
+label:first-of-type { margin-top: 0; }
+select, input[type=date], input[type=number] {
+  width: 100%; height: 44px; padding: 0 12px; font-size: 16px;
+  border: 1px solid #ddd; border-radius: 8px;
+  background: #fafafa; color: #111;
+  -webkit-appearance: none; appearance: none;
+}
+select:focus, input:focus { outline: none; border-color: #185FA5; background: #fff; }
+.date-row { display: flex; align-items: center; gap: 8px; }
+.date-row input { flex: 1; }
+.date-sep { font-size: 14px; color: #888; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+th { font-size: 12px; font-weight: 600; color: #888; text-align: left; padding: 6px 4px; border-bottom: 1px solid #eee; }
+th:last-child { text-align: right; }
+td { padding: 4px; font-size: 13px; vertical-align: middle; color: #555; }
+td input { width: 100%; height: 38px; font-size: 15px; text-align: right; padding: 0 8px; border: 1px solid #eee; border-radius: 6px; background: #fafafa; color: #111; }
+td input:focus { outline: none; border-color: #185FA5; background: #fff; }
+.total-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 2px; border-top: 1px solid #eee; margin-top: 6px; }
+.total-label { font-size: 13px; color: #888; }
+.total-val { font-size: 24px; font-weight: 600; color: #111; }
+.warn-box { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #856404; margin-top: 10px; display: none; }
+.preview-box { background: #f8f8f8; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.9; color: #333; white-space: pre-wrap; margin-top: 12px; display: none; border: 1px solid #eee; }
+.btn { width: 100%; height: 50px; font-size: 16px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+.btn-preview { background: #f0f0f0; color: #333; }
+.btn-preview:active { background: #e0e0e0; }
+.btn-send { background: #185FA5; color: #fff; }
+.btn-send:active { background: #0d4a8a; }
+.btn-send:disabled { background: #ccc; color: #888; cursor: not-allowed; }
+.btn-copy { background: #f0f0f0; color: #555; display: none; }
+.status { text-align: center; font-size: 14px; margin-top: 12px; padding: 12px; border-radius: 8px; display: none; font-weight: 500; }
+.status.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+.status.err { background: #ffebee; color: #c62828; display: block; }
+.status.sending { background: #e3f2fd; color: #1565c0; display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <h1>入金報告</h1>
+    <p>株式会社カプリ</p>
+  </div>
+
+  <div class="section">
+    <p class="section-title">基本情報</p>
+    <label>店舗</label>
+    <select id="store">
+      <option value="">選択してください</option>
+      <option>米野木店</option>
+      <option>竹の山店</option>
+      <option>滝の水店</option>
+      <option>茶屋が坂店</option>
+      <option>おそうじ本舗 千種若水店</option>
+    </select>
+    <label>振込日</label>
+    <input type="date" id="depositDate">
+    <label>売上対象期間</label>
+    <div class="date-row">
+      <input type="date" id="fromDate">
+      <span class="date-sep">〜</span>
+      <input type="date" id="toDate">
+    </div>
+    <div class="warn-box" id="rangeWarn"></div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">日別売上明細</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:42%">日付</th>
+          <th style="width:58%">売上金額（円）</th>
+        </tr>
+      </thead>
+      <tbody id="salesBody"></tbody>
+    </table>
+    <div class="total-bar">
+      <span class="total-label">振込合計</span>
+      <span class="total-val" id="totalDisplay">¥0</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">確認・送信</p>
+    <button class="btn btn-preview" id="previewBtn">内容を確認する</button>
+    <div class="preview-box" id="preview"></div>
+    <button class="btn btn-copy" id="copyBtn">テキストをコピーする</button>
+    <button class="btn btn-send" id="sendBtn" disabled>スプレッドシートに送信する</button>
+    <div class="status" id="statusMsg"></div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSev6FkFHZoqIxONCHgsYugpZbyVI2s8sZ8w840HaYXi7dSEKG4_Xr2wpSCEF_LqIrsg/exec';
+const WD = ['日','月','火','水','木','金','土'];
+
+const fromD = document.getElementById('fromDate');
+const toD = document.getElementById('toDate');
+const salesBody = document.getElementById('salesBody');
+const totalDisplay = document.getElementById('totalDisplay');
+const warn = document.getElementById('rangeWarn');
+const preview = document.getElementById('preview');
+const previewBtn = document.getElementById('previewBtn');
+const copyBtn = document.getElementById('copyBtn');
+const sendBtn = document.getElementById('sendBtn');
+const statusMsg = document.getElementById('statusMsg');
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtDate(s){ const d=new Date(s); return d.getFullYear()+'年'+pad(d.getMonth()+1)+'月'+pad(d.getDate())+'日'; }
+function fmtYen(n){ return '¥'+Number(n||0).toLocaleString(); }
+
+function buildRows(){
+  const f=fromD.value, t=toD.value;
+  if(!f||!t||f>t){ salesBody.innerHTML=''; updateTotal(); return; }
+  const start=new Date(f), end=new Date(t);
+  const days=Math.round((end-start)/86400000)+1;
+  if(days>31){ warn.textContent='期間は最大31日までです'; warn.style.display='block'; salesBody.innerHTML=''; return; }
+  warn.style.display='none';
+  const existing={};
+  salesBody.querySelectorAll('tr').forEach(tr=>{ const v=tr.querySelector('input').value; if(tr.dataset.date&&v) existing[tr.dataset.date]=v; });
+  salesBody.innerHTML='';
+  for(let i=0;i<days;i++){
+    const cur=new Date(start); cur.setDate(start.getDate()+i);
+    const iso=cur.toISOString().slice(0,10);
+    const tr=document.createElement('tr');
+    tr.dataset.date=iso;
+    tr.innerHTML=`<td style="color:#888;font-size:13px">${pad(cur.getMonth()+1)}/${pad(cur.getDate())}（${WD[cur.getDay()]}）</td><td><input type="number" min="0" step="1" placeholder="0" value="${existing[iso]||''}"></td>`;
+    tr.querySelector('input').addEventListener('input', updateTotal);
+    salesBody.appendChild(tr);
+  }
+  updateTotal();
+}
+
+function updateTotal(){
+  let sum=0;
+  salesBody.querySelectorAll('input').forEach(inp=>{ sum+=Number(inp.value||0); });
+  totalDisplay.textContent=fmtYen(sum);
+}
+
+function buildPreviewText(){
+  const store=document.getElementById('store').value;
+  const dep=document.getElementById('depositDate').value;
+  const f=fromD.value, t=toD.value;
+  if(!store||!dep||!f||!t) return null;
+  let lines=[], sum=0;
+  salesBody.querySelectorAll('tr').forEach(tr=>{
+    const d=tr.dataset.date;
+    const v=Number(tr.querySelector('input').value||0);
+    const cur=new Date(d);
+    lines.push(`  ${pad(cur.getMonth()+1)}/${pad(cur.getDate())}（${WD[cur.getDay()]}）　${v.toLocaleString()}円`);
+    sum+=v;
+  });
+  return `【入金報告】株式会社カプリ\n店舗：${store}\n振込日：${fmtDate(dep)}\n対象期間：${fmtDate(f)} 〜 ${fmtDate(t)}\n\n【日別売上明細】\n${lines.join('\n')}\n\n振込合計：${sum.toLocaleString()}円`;
+}
+
+function validate(){
+  const store=document.getElementById('store').value;
+  const dep=document.getElementById('depositDate').value;
+  const f=fromD.value, t=toD.value;
+  if(!store){ alert('店舗を選択してください'); return false; }
+  if(!dep){ alert('振込日を入力してください'); return false; }
+  if(!f||!t){ alert('売上対象期間を入力してください'); return false; }
+  if(!salesBody.querySelectorAll('tr').length){ alert('売上対象期間を入力してください'); return false; }
+  return true;
+}
+
+previewBtn.addEventListener('click', ()=>{
+  if(!validate()) return;
+  preview.textContent=buildPreviewText();
+  preview.style.display='block';
+  copyBtn.style.display='block';
+  sendBtn.disabled=false;
+  previewBtn.textContent='再確認する';
+  statusMsg.className='status';
+  statusMsg.style.display='none';
+});
+
+copyBtn.addEventListener('click', ()=>{
+  const text=buildPreviewText();
+  if(!text) return;
+  navigator.clipboard.writeText(text).then(()=>{
+    copyBtn.textContent='コピーしました！';
+    setTimeout(()=>{ copyBtn.textContent='テキストをコピーする'; }, 2000);
+  });
+});
+
+sendBtn.addEventListener('click', ()=>{
+  if(!validate()) return;
+  sendBtn.disabled=true;
+  sendBtn.textContent='送信中...';
+  statusMsg.className='status sending';
+  statusMsg.textContent='送信中です...';
+  statusMsg.style.display='block';
+
+  const store=document.getElementById('store').value;
+  const dep=document.getElementById('depositDate').value;
+  const f=fromD.value, t=toD.value;
+  const rows=[];
+  salesBody.querySelectorAll('tr').forEach(tr=>{
+    rows.push({ date: tr.dataset.date, amount: Number(tr.querySelector('input').value||0) });
+  });
+
+  const params = new URLSearchParams({
+    store: store,
+    depositDate: dep,
+    fromDate: f,
+    toDate: t,
+    rows: JSON.stringify(rows)
+  });
+
+  // JSONPで送信（CORS回避）
+  const callbackName = 'gasCallback_' + Date.now();
+  window[callbackName] = function(response) {
+    delete window[callbackName];
+    document.head.removeChild(script);
+    if(response && response.result === 'success') {
+      statusMsg.className='status ok';
+      statusMsg.textContent='✓ 送信しました！スプレッドシートを確認してください。';
+      sendBtn.textContent='送信済み';
+    } else {
+      statusMsg.className='status err';
+      statusMsg.textContent='エラーが発生しました。もう一度お試しください。';
+      sendBtn.textContent='スプレッドシートに送信する';
+      sendBtn.disabled=false;
+    }
+  };
+
+  const script = document.createElement('script');
+  script.src = GAS_URL + '?' + params.toString() + '&callback=' + callbackName;
+  script.onerror = function() {
+    delete window[callbackName];
+    document.head.removeChild(script);
+    statusMsg.className='status err';
+    statusMsg.textContent='送信に失敗しました。通信環境を確認してください。';
+    sendBtn.textContent='スプレッドシートに送信する';
+    sendBtn.disabled=false;
+  };
+  document.head.appendChild(script);
+});
+
+fromD.addEventListener('change', buildRows);
+toD.addEventListener('change', buildRows);
+document.getElementById('depositDate').value=new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
