@@ -66,6 +66,7 @@ td input:focus { outline: none; border-color: #185FA5; background: #fff; }
       <option>滝の水店</option>
       <option>茶屋が坂店</option>
       <option>おそうじ本舗 千種若水店</option>
+      <option>長久手店</option>
     </select>
     <label>振込日</label>
     <input type="date" id="depositDate">
@@ -223,7 +224,6 @@ sendBtn.addEventListener('click', ()=>{
     rows: JSON.stringify(rows)
   });
 
-  // JSONPで送信（CORS回避）
   const callbackName = 'gasCallback_' + Date.now();
   window[callbackName] = function(response) {
     delete window[callbackName];
